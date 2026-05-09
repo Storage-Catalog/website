@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   const description =
     truncateStringWithEllipsis(match.summary?.trim() ||
-      `Dictionary entry ${match.id} from ${siteConfig.siteName}`, 200);
+      `Dictionary entry ${match.id} from ${siteConfig.siteName}`, 500);
   const title = `${match.terms?.[0] ?? match.id} | ${siteConfig.siteName} Dictionary`;
   const canonicalSlug = buildDictionarySlug(match);
 
