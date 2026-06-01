@@ -20,8 +20,9 @@ import { PostAcknowledgements } from "./PostAcknowledgements";
 import { PostAttachmentsSection } from "./PostAttachmentsSection";
 import { PostCommentsSection } from "./PostCommentsSection";
 import { PostPdfModal } from "./PostPdfModal";
+import { PostCsvModal } from "./PostCsvModal";
 import { PostLightbox } from "./PostLightbox";
-import type { LightboxState, PdfPageInfo, PdfViewerState } from "./types";
+import type { CsvViewerState, LightboxState, PdfPageInfo, PdfViewerState } from "./types";
 import { applyTempHistoryState, buildHistoryState, getHistoryState, getTempHistoryState, saveTempHistoryState } from "@/lib/urlState";
 
 type Props = {
@@ -40,6 +41,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
   const currentData = liveState ? liveState : baseData;
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
   const [pdfViewer, setPdfViewer] = useState<PdfViewerState | null>(null);
+  const [csvViewer, setCsvViewer] = useState<CsvViewerState | null>(null);
   const [pdfPageInfo, setPdfPageInfo] = useState<PdfPageInfo>({ page: 1, total: 0 });
   const [activeDictionary, setActiveDictionary] = useState<IndexedDictionaryEntry | null>(null);
   const activeDictionaryRef = useRef<IndexedDictionaryEntry | null>(null);
@@ -361,6 +363,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
           setPdfPageInfo({ page: 1, total: 0 });
           setPdfViewer(pdf);
         }}
+        onViewCsv={setCsvViewer}
       />
 
       {commentsLoading ? (
@@ -376,6 +379,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
             setPdfPageInfo({ page: 1, total: 0 });
             setPdfViewer(pdf);
           }}
+          onViewCsv={setCsvViewer}
         />
       ) : null}
 
@@ -396,6 +400,13 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
           pdfPageInfo={pdfPageInfo}
           onClose={closePdfViewer}
           onPageChange={handlePdfPageChange}
+        />
+      ) : null}
+
+      {csvViewer ? (
+        <PostCsvModal
+          csvViewer={csvViewer}
+          onClose={() => setCsvViewer(null)}
         />
       ) : null}
 

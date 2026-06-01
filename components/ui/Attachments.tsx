@@ -6,15 +6,18 @@ import { getYouTubeEmbedURL } from "@/lib/utils/media";
 import type { Attachment, Image as ArchiveImage } from "@/lib/types";
 
 type PdfPreviewRequest = { src: string; title?: string; description?: string };
+type CsvPreviewRequest = { src: string; title?: string; description?: string };
 
 export function AttachmentCard({
   att,
   onView,
   onViewPdf,
+  onViewCsv,
 }: {
   att: Attachment;
   onView?(img: ArchiveImage): void;
   onViewPdf?(pdf: PdfPreviewRequest): void;
+  onViewCsv?(csv: CsvPreviewRequest): void;
 }) {
   const href = att.path && att.canDownload ? att.path : att.url;
   const sourceURL = att.path || att.url;
@@ -37,6 +40,8 @@ export function AttachmentCard({
   const isImage = !isVideo && (att.contentType?.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(att.name || ""));
   const isPdf = !att.youtube && (att.contentType?.toLowerCase().includes("pdf") || /\.pdf$/i.test(att.name || ""));
   const pdfSource = isPdf ? sourceURL : null;
+  const isCsv = !att.youtube && (att.contentType?.toLowerCase().includes("csv") || /\.(csv|tsv)$/i.test(att.name || ""));
+  const csvSource = isCsv ? sourceURL : null;
   const imageForView: ArchiveImage = att;
   const [showSchematic, setShowSchematic] = useState(false);
   return (
@@ -141,6 +146,15 @@ export function AttachmentCard({
                 className="rounded-lg border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 View PDF
+              </button>
+            ) : null}
+            {isCsv && csvSource && onViewCsv ? (
+              <button
+                type="button"
+                onClick={() => onViewCsv({ src: csvSource, title, description: att.description })}
+                className="rounded-lg border px-3 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                View Spreadsheet
               </button>
             ) : null}
             {att.canDownload ? (

@@ -14,6 +14,8 @@
     "@huggingface/transformers": "file:transformers/huggingface-transformers-3.8.1.tgz",
     "@next/third-parties": "^16.1.1",
     "@tanstack/react-virtual": "^3.13.18",
+    "@univerjs/preset-sheets-core": "^0.25.0",
+    "@univerjs/presets": "^0.25.0",
     "js.foresight": "^3.4.0",
     "next": "^16.1.1",
     "react": "^19.2.3",

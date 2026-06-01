@@ -5,7 +5,7 @@ import { AttachmentCard } from "../ui/Attachments";
 import { AuthorInline } from "../ui/Authors";
 import { MarkdownText } from "../ui/LinkHelpers";
 import { RelativeTime } from "../ui/RelativeTime";
-import type { LightboxState, PdfViewerState } from "./types";
+import type { CsvViewerState, LightboxState, PdfViewerState } from "./types";
 
 type Props = {
   comments: ArchiveComment[];
@@ -14,6 +14,7 @@ type Props = {
   onLinkClick(e: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void;
   setLightbox: (lightbox: LightboxState) => void;
   onViewPdf: (pdf: PdfViewerState) => void;
+  onViewCsv: (csv: CsvViewerState) => void;
 };
 
 export function PostCommentsSection({
@@ -23,6 +24,7 @@ export function PostCommentsSection({
   onLinkClick,
   setLightbox,
   onViewPdf,
+  onViewCsv,
 }: Props) {
   if (!comments.length) return null;
 
@@ -60,6 +62,7 @@ export function PostCommentsSection({
                         })
                       }
                       onViewPdf={onViewPdf}
+                      onViewCsv={onViewCsv}
                     />
                   ))}
                 </div>
