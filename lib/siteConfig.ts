@@ -41,11 +41,11 @@ export const siteConfig: SiteConfig = {
   siteOrigin,
   siteUrl,
   archiveRepo: {
-    owner: "Storage-Tech-2",
+    owner: "Storage-Catalog",
     repo: "Archive",
     branch: "main",
   },
   lfsExtensions: ["mp4", "bin", "zip"],
-  repositoryUrl: "https://github.com/Storage-Tech-2/Archive",
+  repositoryUrl: "https://github.com/Storage-Catalog/Archive",
   discordInviteUrl: "https://discord.gg/storage-tech-2-1375556143186837695",
 };
