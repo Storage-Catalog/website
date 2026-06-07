@@ -9,7 +9,7 @@ import { getArchiveSlugInfo, getDictionarySlugInfo } from "@/lib/utils/urls";
 import { assetURL, attachmentURL } from "@/lib/github";
 import { type ArchiveListItem } from "@/lib/archive";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
-import { type ArchiveEntryData, type ArchiveComment, type Author, type GlobalTag, type IndexedDictionaryEntry, type Reference, type StyleInfo } from "@/lib/types";
+import { type ArchiveEntryData, type ArchiveComment, type GlobalTag, type IndexedDictionaryEntry, type Reference, type StyleInfo } from "@/lib/types";
 import { siteConfig } from "@/lib/siteConfig";
 import { AuthorsLine, EndorsersLine } from "../ui/Authors";
 import { ChannelBadge } from "../ui/ChannelBadge";
@@ -52,6 +52,13 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
   const numComments = currentData?.num_comments ?? 0;
   const basePath = siteConfig.basePath || "";
   const expectedPathname = `${basePath}/archives/${encodeURIComponent(post.slug)}/`;
+  const githubEntryPath = `${post.channel.path}/${post.entry.path}`
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+  const githubEntryURL = siteConfig.repositoryUrl
+    ? `${siteConfig.repositoryUrl.replace(/\/+$/, "")}/tree/${encodeURIComponent(siteConfig.archiveRepo.branch)}/${githubEntryPath}#readme`
+    : null;
 
   useEffect(() => {
     if (disableLiveFetch) return;
@@ -292,9 +299,9 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
 
   const updatedAt = currentData?.updatedAt ?? post.entry.updatedAt;
   const archivedAt = currentData?.archivedAt ?? post.entry.archivedAt;
-  const acknowledgements = currentData
-    ? (currentData as { acknowledgements?: Array<Partial<Author> & { reason?: string }> }).acknowledgements || []
-    : [];
+  const explicitAcknowledgements = currentData?.acknowledgements || [];
+  const authorAcknowledgements = currentData?.authors?.filter((author) => author.reason?.trim()) || [];
+  const acknowledgements = [...explicitAcknowledgements, ...authorAcknowledgements];
   const authorReferences = currentData
     ? (currentData as { author_references?: Reference[] }).author_references
     : undefined;
@@ -383,15 +390,29 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
         />
       ) : null}
 
-      {currentData?.post?.threadURL ? (
-        <a
-          href={currentData.post.threadURL}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-        >
-          View Discord Thread
-        </a>
+      {githubEntryURL || currentData?.post?.threadURL ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {githubEntryURL ? (
+            <a
+              href={githubEntryURL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              View on GitHub
+            </a>
+          ) : null}
+          {currentData?.post?.threadURL ? (
+            <a
+              href={currentData.post.threadURL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              View Discord Thread
+            </a>
+          ) : null}
+        </div>
       ) : null}
 
       {pdfViewer ? (
