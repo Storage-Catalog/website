@@ -350,30 +350,6 @@ export function useArchiveFilters({
     [isArchivePostURL, selectedAuthors],
   );
 
-  const allTags = useMemo<Tag[]>(() => {
-    if (isArchivePostURL) return [];
-    const channelPool = getVisibleChannels(channels, effectiveSelectedChannels);
-    const fromChannels = channelPool.flatMap((ch) => ch.availableTags || []);
-    const authorSet = normalizedSelectedAuthors.length ? new Set(normalizedSelectedAuthors) : null;
-    const postsPool = posts.filter((p) => {
-      const matchesChannel =
-        !effectiveSelectedChannels.length || effectiveSelectedChannels.includes(p.channel.code);
-      if (!matchesChannel) return false;
-      if (!authorSet) return true;
-      const authors = getPostAuthorsNormalized(p);
-      return authors.some((a) => authorSet.has(a));
-    });
-    const fromEntryRefs = postsPool.flatMap((p) => p.entry.tags || []);
-    const fromGlobals = (globalTags?.length ? globalTags : DEFAULT_GLOBAL_TAGS).map((tag) => tag.name);
-    const names = Array.from(new Set([...fromGlobals, ...fromChannels, ...fromEntryRefs, ...activeTagNames]));
-    let tags = sortTagObjectsForDisplay(names.map((n) => ({ id: n, name: n })), globalTags);
-    if (!effectiveSelectedChannels.length && !selectedAuthors.length) {
-      const activeTagNorms = new Set(activeTagNames.map((name) => normalize(name)));
-      tags = tags.filter((tag) => activeTagNorms.has(normalize(tag.name)) || !!getSpecialTagMeta(tag.name, globalTags));
-    }
-    return tags;
-  }, [activeTagNames, channels, posts, selectedAuthors.length, effectiveSelectedChannels, normalizedSelectedAuthors, globalTags, isArchivePostURL]);
-
   const availableAuthors = useMemo(() => {
     if (isArchivePostURL) return [] as string[];
     const map = new Map<string, string>();
@@ -577,9 +553,37 @@ export function useArchiveFilters({
     [filteredPosts, isArchivePostURL],
   );
   const tagCounts = useMemo(
-    () => (isArchivePostURL ? {} : computeTagCounts(regularFilteredPosts)),
-    [regularFilteredPosts, isArchivePostURL],
+    () => (isArchivePostURL ? {} : computeTagCounts(filteredPosts)),
+    [filteredPosts, isArchivePostURL],
   );
+
+  const allTags = useMemo<Tag[]>(() => {
+    if (isArchivePostURL) return [];
+    const channelPool = getVisibleChannels(channels, effectiveSelectedChannels);
+    const fromChannels = channelPool.flatMap((ch) => ch.availableTags || []);
+    const authorSet = normalizedSelectedAuthors.length ? new Set(normalizedSelectedAuthors) : null;
+    const postsPool = posts.filter((p) => {
+      const matchesChannel =
+        !effectiveSelectedChannels.length || effectiveSelectedChannels.includes(p.channel.code);
+      if (!matchesChannel) return false;
+      if (!authorSet) return true;
+      const authors = getPostAuthorsNormalized(p);
+      return authors.some((a) => authorSet.has(a));
+    });
+    const fromEntryRefs = postsPool.flatMap((p) => p.entry.tags || []);
+    const fromGlobals = (globalTags?.length ? globalTags : DEFAULT_GLOBAL_TAGS).map((tag) => tag.name);
+    const names = Array.from(new Set([...fromGlobals, ...fromChannels, ...fromEntryRefs, ...activeTagNames]));
+    let tags = sortTagObjectsForDisplay(names.map((n) => ({ id: n, name: n })), globalTags);
+    if (!effectiveSelectedChannels.length) {
+      const activeTagNorms = new Set(activeTagNames.map((name) => normalize(name)));
+      if (q.trim()) {
+        tags = tags.filter((tag) => activeTagNorms.has(normalize(tag.name)) || (tagCounts[normalize(tag.name)] || 0) > 0);
+      } else if (!selectedAuthors.length) {
+        tags = tags.filter((tag) => activeTagNorms.has(normalize(tag.name)) || !!getSpecialTagMeta(tag.name, globalTags));
+      }
+    }
+    return tags;
+  }, [activeTagNames, channels, posts, selectedAuthors.length, effectiveSelectedChannels, normalizedSelectedAuthors, globalTags, isArchivePostURL, q, tagCounts]);
 
   const handleToggleTag = (tagName: string, rightClick: boolean) => {
     scrollToTop();
