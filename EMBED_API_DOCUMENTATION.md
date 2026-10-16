@@ -280,7 +280,10 @@ GitHub raw/LFS path, then the original URL. It is absolute and HTTP(S), or `null
 when the attachment cannot be downloaded. `sourceUrl` is the original provenance
 link and may be expired or lead to an HTML page. Prefer `downloadUrl` for imports.
 
-The clicked button is disabled while pending. Reporting `pending` updates its
+The clicked button is disabled while pending. Status feedback appears in a tooltip
+above the button on hover or keyboard focus and never affects button layout.
+Escape dismisses the tooltip; status updates are also announced to screen readers.
+Reporting `pending` updates its
 plain-text status (up to 500 characters) but does not extend its original deadline.
 `success` or `failure` completes the action, displays feedback, and permits another
 click. No response before the deadline displays a timeout failure. There is no
