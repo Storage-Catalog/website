@@ -109,7 +109,7 @@ export function HeaderBar(props: Props) {
     <header className="top-0 z-20 bg-white/80 backdrop-blur border-b dark:bg-gray-900/80 sm:sticky">
       <div className="mx-auto w-full px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex w-full flex-col gap-2 pb-1 md:flex-row md:flex-wrap md:items-center md:gap-3">
-          <div className="flex w-full items-center md:w-auto md:shrink-0">
+          <div data-site-navigation className="flex w-full items-center md:w-auto md:shrink-0">
             <ForesightPrefetchLink
               href="/"
               onClick={onLogoClick}
@@ -128,7 +128,7 @@ export function HeaderBar(props: Props) {
             </ForesightPrefetchLink>
           </div>
 
-          <div className="flex w-full min-w-0 items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 md:w-auto md:shrink-0 md:gap-4 md:overflow-visible md:pb-0">
+          <div data-site-navigation className="flex w-full min-w-0 items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 md:w-auto md:shrink-0 md:gap-4 md:overflow-visible md:pb-0">
             <ForesightPrefetchLink
               href="/"
               aria-current={isCurrentPage(currentPath, "/") ? "page" : undefined}

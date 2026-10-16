@@ -1,4 +1,5 @@
 import type { ArchiveComment } from "@/lib/types";
+import type { ArchiveListItem } from "@/lib/archive";
 import { attachmentURL } from "@/lib/github";
 import { replaceAttachmentsInText } from "@/lib/utils/attachments";
 import { AttachmentCard } from "../ui/Attachments";
@@ -8,6 +9,7 @@ import { RelativeTime } from "../ui/RelativeTime";
 import type { CsvViewerState, LightboxState, PdfViewerState } from "./types";
 
 type Props = {
+  post: ArchiveListItem;
   comments: ArchiveComment[];
   channelPath: string;
   entryPath: string;
@@ -18,6 +20,7 @@ type Props = {
 };
 
 export function PostCommentsSection({
+  post,
   comments,
   channelPath,
   entryPath,
@@ -50,13 +53,15 @@ export function PostCommentsSection({
               ) : null}
               {attachments.length ? (
                 <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {attachments.map((att) => (
+                  {(c.attachments || []).map((att) => (
                     <AttachmentCard
                       key={att.id}
                       att={att}
-                      onView={() =>
+                      post={post}
+                      context={{ location: "comment", commentId: c.id }}
+                      onView={(img) =>
                         setLightbox({
-                          src: att.path || att.url,
+                          src: img.path || img.url,
                           alt: att.description || att.name,
                           mode: "single",
                         })

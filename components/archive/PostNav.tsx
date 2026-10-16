@@ -53,7 +53,7 @@ export function PostNav({ prefetch, goHome, resync }: Props) {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl items-center justify-between">
+    <div data-site-navigation className="mx-auto flex w-full max-w-4xl items-center justify-between">
       <ForesightPrefetchLink
         href="/archives/"
         className="rounded-full border px-3 py-1 text-sm transition hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-gray-900"

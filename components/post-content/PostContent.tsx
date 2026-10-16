@@ -6,7 +6,9 @@ import { RelativeTime } from "../ui/RelativeTime";
 import { fetchCommentsData, fetchDictionaryEntry, prefetchArchiveEntryData } from "@/lib/archive";
 import { getDictionaryIdFromSlug } from "@/lib/dictionary";
 import { getArchiveSlugInfo, getDictionarySlugInfo } from "@/lib/utils/urls";
-import { assetURL, attachmentURL } from "@/lib/github";
+import { assetURL } from "@/lib/github";
+import { useEmbed } from "../embed/EmbedProvider";
+import { embedAttachment, embedPost } from "@/lib/embed/attachments";
 import { type ArchiveListItem } from "@/lib/archive";
 import { disableLiveFetch } from "@/lib/runtimeFlags";
 import { type ArchiveEntryData, type ArchiveComment, type GlobalTag, type IndexedDictionaryEntry, type Reference, type StyleInfo } from "@/lib/types";
@@ -36,9 +38,14 @@ type Props = {
 };
 
 export function PostContent({ post, data, schemaStyles, dictionaryTooltips, globalTags, onLinkClick, preloadImage }: Props) {
+  const { publishPost } = useEmbed();
   const [liveState, setLiveState] = useState<ArchiveEntryData | null>(null);
   const baseData = data;
   const currentData = liveState ? liveState : baseData;
+  useEffect(() => {
+    publishPost({ post: embedPost(post), attachments: (currentData?.attachments ?? []).map((att) => embedAttachment(att, post)), loading: !currentData });
+  }, [post, currentData, publishPost]);
+  useEffect(() => () => publishPost(null), [publishPost]);
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
   const [pdfViewer, setPdfViewer] = useState<PdfViewerState | null>(null);
   const [csvViewer, setCsvViewer] = useState<CsvViewerState | null>(null);
@@ -292,10 +299,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
   })) ?? [];
   const imageAspect = "16/9";
 
-  const attachments = currentData?.attachments?.map((att) => ({
-    ...att,
-    path: att.path ? attachmentURL(post.channel.path, post.entry.path, att) : att.path,
-  })) ?? [];
+  const attachments = currentData?.attachments ?? [];
 
   const updatedAt = currentData?.updatedAt ?? post.entry.updatedAt;
   const archivedAt = currentData?.archivedAt ?? post.entry.archivedAt;
@@ -307,7 +311,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
     : undefined;
 
   return (
-    <article className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+    <article data-post-content className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <header className="flex flex-col gap-3 border-b pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -364,6 +368,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
       />
 
       <PostAttachmentsSection
+        post={post}
         attachments={attachments}
         setLightbox={setLightbox}
         onViewPdf={(pdf) => {
@@ -377,6 +382,7 @@ export function PostContent({ post, data, schemaStyles, dictionaryTooltips, glob
         <div className="text-sm text-gray-500">Loading comments...</div>
       ) : comments?.length ? (
         <PostCommentsSection
+          post={post}
           comments={comments}
           channelPath={post.channel.path}
           entryPath={post.entry.path}

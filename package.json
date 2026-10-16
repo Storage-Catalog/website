@@ -8,7 +8,8 @@
     "build": "tsx scripts/build-sw.ts && next build",
     "clean": "tsx scripts/clean.ts",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:embed": "node --import tsx --test tests/embed-protocol.test.ts tests/embed-client.test.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "file:transformers/huggingface-transformers-3.8.1.tgz",

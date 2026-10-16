@@ -5,6 +5,7 @@ import { siteConfig } from "@/lib/siteConfig";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { AutoReloadOnChunkError } from "@/components/AutoReloadOnChunkError";
+import { EmbedProvider } from "@/components/embed/EmbedProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,7 +60,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900 dark:bg-black dark:text-white`}>
         <AutoReloadOnChunkError />
         <ServiceWorkerRegister />
-        {children}
+        <EmbedProvider>{children}</EmbedProvider>
       </body>
     </html>
   );
