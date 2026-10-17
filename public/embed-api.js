@@ -1,5 +1,6 @@
 /** Storage Catalog embed API v1. Dependency-free ES module for the parent page. */
-const namespace = "storage-catalog";
+// Must match the site's siteConfig.embedNamespace; override per iframe with options.namespace.
+const defaultNamespace = "storage-catalog";
 const version = 1;
 
 export class CatalogEmbedError extends Error {
@@ -10,6 +11,8 @@ export function createCatalogEmbed(iframe, options = {}) {
   if (!iframe || iframe.tagName !== "IFRAME") throw new TypeError("Expected an iframe element.");
   const origin = new URL(options.origin ?? iframe.src, window.location.href).origin;
   if (!/^https?:\/\//.test(origin)) throw new TypeError("The catalog must have an HTTP(S) origin.");
+  const namespace = options.namespace ?? defaultNamespace;
+  if (typeof namespace !== "string" || !namespace) throw new TypeError("namespace must be a nonempty string.");
   const timeoutMs = options.timeoutMs ?? 15000;
   let configuration = structuredClone(options.config ?? {});
   let sessionId = null;

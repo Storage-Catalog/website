@@ -16,7 +16,9 @@ export function AttachmentAction({ id, label, post, attachment, context }: {
   const [focused, setFocused] = useState(false);
   const [position, setPosition] = useState<{ left: number; top: number; width: number } | null>(null);
   const [state, setState] = useState<{ status: "pending" | "success" | "failure"; message: string } | null>(null);
-  const message = !attachment.canDownload ? "Direct file unavailable." : state?.message;
+  // YouTube attachments have no file; parents receive sourceUrl instead.
+  const unavailable = !attachment.canDownload && attachment.kind !== "youtube";
+  const message = unavailable ? "Direct file unavailable." : state?.message;
   const tooltipOpen = !!message && (hovered || focused);
   const updatePosition = useCallback(() => {
     const rect = wrapperRef.current?.getBoundingClientRect();
@@ -56,7 +58,7 @@ export function AttachmentAction({ id, label, post, attachment, context }: {
       <button
         type="button"
         aria-describedby={message ? (tooltipOpen && position ? tooltipId : statusId) : undefined}
-        disabled={!attachment.canDownload || state?.status === "pending"}
+        disabled={unavailable || state?.status === "pending"}
         className="rounded-lg border px-3 py-1 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-gray-800"
         onClick={async () => {
           setState({ status: "pending", message: "Working…" });

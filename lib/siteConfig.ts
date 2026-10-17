@@ -14,6 +14,8 @@ export type SiteConfig = {
   };
   discordInviteUrl?: string;
   repositoryUrl?: string;
+  // Namespace for iframe embed API messages; parent pages must use the same value.
+  embedNamespace: string;
 };
 
 const normalizeBasePath = (value: string) => {
@@ -48,4 +50,5 @@ export const siteConfig: SiteConfig = {
   lfsExtensions: ["mp4", "bin", "zip"],
   repositoryUrl: "https://github.com/Storage-Catalog/Archive",
   discordInviteUrl: "https://discord.gg/storage-tech-2-1375556143186837695",
+  embedNamespace: "storage-catalog",
 };

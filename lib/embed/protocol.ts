@@ -1,20 +1,25 @@
 import type { SortKey } from "../types";
+import { siteConfig } from "../siteConfig";
 
-export const EMBED_NAMESPACE = "storage-catalog";
+export const EMBED_NAMESPACE = siteConfig.embedNamespace;
 export const EMBED_VERSION = 1;
 export const EMBED_CAPABILITIES = ["attachmentActions", "viewSchematic", "actionResults", "navigation", "state", "filters", "appearance"] as const;
-export type AttachmentKind = "litematic" | "wdl";
+export const ATTACHMENT_KINDS = ["litematic", "schematic", "wdl", "youtube", "video", "image", "pdf", "csv", "other"] as const;
+export type AttachmentKind = (typeof ATTACHMENT_KINDS)[number];
+/** Kinds that get the built-in or parent schematic viewer. */
+export const SCHEMATIC_VIEWER_KINDS: readonly AttachmentKind[] = ["litematic", "schematic"];
+type DownloadMode = "keep" | "replace" | "hide";
 export type EmbedAction = { id: string; label: string; kinds: AttachmentKind[] };
 export type EmbedConfig = {
   actions: EmbedAction[];
-  download: Record<AttachmentKind, "keep" | "replace" | "hide">;
+  download: Record<AttachmentKind, DownloadMode>;
   viewSchematic: { mode: "builtin" | "parent" | "hidden"; label: string };
   appearance: { compact: boolean; hideNavigation: boolean; hideFooter: boolean; theme: "light" | "dark" | "system" };
   actionTimeoutMs: number;
 };
 export const DEFAULT_EMBED_CONFIG: EmbedConfig = {
   actions: [],
-  download: { litematic: "keep", wdl: "keep" },
+  download: Object.fromEntries(ATTACHMENT_KINDS.map((kind) => [kind, "keep"])) as Record<AttachmentKind, DownloadMode>,
   viewSchematic: { mode: "builtin", label: "View Schematic" },
   appearance: { compact: false, hideNavigation: false, hideFooter: false, theme: "system" },
   actionTimeoutMs: 60_000,
@@ -25,9 +30,10 @@ export type EmbedFilters = {
 };
 export type EmbedPost = { id: string; code: string; title: string; url: string };
 export type EmbedAttachment = {
-  id: string; kind: AttachmentKind | "other"; name: string; downloadUrl: string | null;
+  id: string; kind: AttachmentKind; name: string; downloadUrl: string | null;
   sourceUrl: string; canDownload: boolean; contentType: string; sizeBytes?: number;
   litematic?: { version?: string; size?: string; error?: string };
+  schematic?: { version?: string; size?: string; error?: string };
   wdl?: { version?: string; error?: string };
 };
 export type AttachmentContext = { location: "post" | "comment"; commentId?: string };
@@ -69,7 +75,7 @@ export function parseConfig(input: unknown): EmbedConfig {
       knownKeys(action, ["id", "label", "kinds"]);
       const id = textValue(action.id, "action id", 64);
       if (!/^[a-zA-Z0-9_-]+$/.test(id) || id === "view-schematic") throw new EmbedError("INVALID_ARGUMENT", "Invalid or reserved action id.");
-      const kinds = stringList(action.kinds, "kinds").map((kind) => choice<AttachmentKind>(kind, ["litematic", "wdl"], "attachment kind"));
+      const kinds = stringList(action.kinds, "kinds").map((kind) => choice<AttachmentKind>(kind, ATTACHMENT_KINDS, "attachment kind"));
       if (!kinds.length) throw new EmbedError("INVALID_ARGUMENT", "An action needs at least one attachment kind.");
       return { id, label: textValue(action.label, "action label", 80), kinds };
     });
@@ -77,8 +83,8 @@ export function parseConfig(input: unknown): EmbedConfig {
   }
   if (value.download !== undefined) {
     const download = record(value.download);
-    knownKeys(download, ["litematic", "wdl"]);
-    for (const kind of ["litematic", "wdl"] as const) {
+    knownKeys(download, [...ATTACHMENT_KINDS]);
+    for (const kind of ATTACHMENT_KINDS) {
       if (download[kind] !== undefined) result.download[kind] = choice(download[kind], ["keep", "replace", "hide"], "download mode");
       if (result.download[kind] === "replace" && !result.actions.some((action) => action.kinds.includes(kind))) throw new EmbedError("INVALID_ARGUMENT", `Replacing ${kind} downloads requires a matching action.`);
     }

@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { getYouTubeEmbedURL } from "@/lib/utils/media";
 import type { Attachment, Image as ArchiveImage } from "@/lib/types";
 import type { ArchiveListItem } from "@/lib/archive";
-import type { AttachmentContext, EmbedConfig } from "@/lib/embed/protocol";
+import { SCHEMATIC_VIEWER_KINDS, type AttachmentContext, type EmbedConfig } from "@/lib/embed/protocol";
 import { attachmentURL } from "@/lib/github";
 import { embedAttachment, embedPost } from "@/lib/embed/attachments";
 import { useEmbed } from "../embed/EmbedProvider";
@@ -35,32 +35,38 @@ export function AttachmentCard({
   const resolvedURL = attachmentURL(post.channel.path, post.entry.path, att);
   const href = att.canDownload ? resolvedURL : att.url;
   const sourceURL = resolvedURL;
-  const schematicURL = att.litematic && sourceURL ? `https://llamamc.org/renderer?url=${encodeURIComponent(sourceURL)}` : null;
-  const customActions = connected ? config.actions.filter((action) => file.kind !== "other" && action.kinds.includes(file.kind)) : [];
-  const downloadMode = connected && file.kind !== "other" ? config.download[file.kind] : "keep";
+  const isSchematic = SCHEMATIC_VIEWER_KINDS.includes(file.kind);
+  const schematicURL = isSchematic && sourceURL ? `https://llamamc.org/renderer?url=${encodeURIComponent(sourceURL)}` : null;
+  const customActions = connected ? config.actions.filter((action) => action.kinds.includes(file.kind)) : [];
+  const downloadMode = connected ? config.download[file.kind] : "keep";
   const viewerMode = connected ? config.viewSchematic.mode : "builtin";
-  const videoFilePattern = /\.(mp4|webm|m3u8|mpd)$/i;
-  const isVideo = !att.youtube && (att.contentType?.startsWith("video/") || videoFilePattern.test(att.name));
-  const kind = att.youtube
+  const useParentViewer = isSchematic && viewerMode === "parent";
+  const useBuiltinViewer = isSchematic && viewerMode === "builtin";
+  const isVideo = file.kind === "video";
+  const kind = file.kind === "youtube"
     ? "YouTube"
-    : att.litematic
+    : file.kind === "litematic"
       ? "Litematic"
-      : att.wdl
-        ? "WDL"
-        : isVideo
-          ? "Video"
-          : att.contentType?.toUpperCase() || "FILE";
+      : file.kind === "schematic"
+        ? "Schematic"
+        : file.kind === "wdl"
+          ? "WDL"
+          : isVideo
+            ? "Video"
+            : att.contentType?.toUpperCase() || "FILE";
   const ext = (att.name?.split(".")?.pop() || "").toUpperCase();
   const title = att.youtube?.title || att.name;
   const embedSrc = att.youtube ? getYouTubeEmbedURL(att.url) : null;
   const videoEmbedSrc = isVideo && sourceURL ? `https://faststream.online/player/#${sourceURL}` : null;
-  const isImage = !isVideo && (att.contentType?.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(att.name || ""));
-  const isPdf = !att.youtube && (att.contentType?.toLowerCase().includes("pdf") || /\.pdf$/i.test(att.name || ""));
+  const isImage = file.kind === "image";
+  const isPdf = file.kind === "pdf";
   const pdfSource = isPdf ? sourceURL : null;
-  const isCsv = !att.youtube && (att.contentType?.toLowerCase().includes("csv") || /\.(csv|tsv)$/i.test(att.name || ""));
+  const isCsv = file.kind === "csv";
   const csvSource = isCsv ? sourceURL : null;
   const imageForView: ArchiveImage = { ...att, path: sourceURL };
   const [schematicConfig, setSchematicConfig] = useState<EmbedConfig | null>(null);
+
+  const schemInfo = att.schematic || att.litematic;
   return (
     <>
       <article className="flex h-full flex-col overflow-hidden rounded-xl border bg-white dark:border-gray-800 dark:bg-gray-900">
@@ -100,19 +106,19 @@ export function AttachmentCard({
           {!att.youtube && <div className="text-[11px] text-gray-500 wrap-break-word">{att.name}</div>}
           {att.description && <div className="text-xs text-gray-700 dark:text-gray-300 wrap-break-word">{att.description}</div>}
 
-          {att.litematic ? (
+          {schemInfo ? (
             <ul className="mt-1 text-xs text-gray-600 dark:text-gray-300">
-              {att.litematic.version && (
+              {schemInfo.version && (
                 <li>
-                  <span className="font-medium">Version:</span> {att.litematic.version}
+                  <span className="font-medium">Version:</span> {schemInfo.version}
                 </li>
               )}
-              {att.litematic.size && (
+              {schemInfo.size && (
                 <li>
-                  <span className="font-medium">Size:</span> {att.litematic.size}
+                  <span className="font-medium">Size:</span> {schemInfo.size}
                 </li>
               )}
-              {att.litematic.error && <li className="text-red-600">{att.litematic.error}</li>}
+              {schemInfo.error && <li className="text-red-600">{schemInfo.error}</li>}
             </ul>
           ) : null}
           {att.wdl ? (
@@ -146,9 +152,9 @@ export function AttachmentCard({
           ) : null}
 
           <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
-            {att.litematic && viewerMode === "parent" ? (
+            {useParentViewer ? (
               <AttachmentAction key={`view-${JSON.stringify(config)}`} id="view-schematic" label={config.viewSchematic.label} post={postInfo} attachment={file} context={context} />
-            ) : att.litematic && viewerMode === "builtin" ? (
+            ) : useBuiltinViewer ? (
               <button
                 type="button"
                 onClick={() => schematicURL && setSchematicConfig(config)}
@@ -191,7 +197,7 @@ export function AttachmentCard({
           </div>
         </div>
       </article>
-      {schematicConfig === config && schematicURL && viewerMode === "builtin" ? (
+      {schematicConfig === config && schematicURL && useBuiltinViewer ? (
         <div className="fixed inset-0 z-50 bg-black/80" onClick={() => setSchematicConfig(null)}>
           <div className="relative h-full w-full" onClick={(e) => e.stopPropagation()}>
             <iframe src={schematicURL} title={title ? `${title} schematic` : "Schematic viewer"} className="h-full w-full border-0 bg-white" allowFullScreen />

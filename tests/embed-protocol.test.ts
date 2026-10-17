@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { absoluteHttpUrl, DEFAULT_EMBED_CONFIG, filtersSearch, parseConfig, parseFilters } from "../lib/embed/protocol";
+import { absoluteHttpUrl, ATTACHMENT_KINDS, DEFAULT_EMBED_CONFIG, filtersSearch, parseConfig, parseFilters } from "../lib/embed/protocol";
 import { embedAttachment } from "../lib/embed/attachments";
 import { extractFiltersFromSearch } from "../lib/filtering";
 import type { ArchiveListItem } from "../lib/archive";
@@ -72,4 +72,27 @@ test("ZIP files do not imply WDL support; parse errors are retained", () => {
   assert.equal(file.kind, "wdl");
   assert.equal(file.wdl?.error, "Unknown region format");
   assert.equal(file.sizeBytes, 123);
+});
+
+test("every attachment kind can be targeted by actions and download policies", () => {
+  for (const kind of ATTACHMENT_KINDS) {
+    const config = parseConfig({ actions: [{ id: "import", label: "Import", kinds: [kind] }], download: { [kind]: "replace" } });
+    assert.equal(config.download[kind], "replace");
+    assert.deepEqual(config.actions[0].kinds, [kind]);
+  }
+  assert.throws(() => parseConfig({ download: { zip: "hide" } }));
+});
+
+test("attachments are classified by metadata, extension and content type", () => {
+  const kindOf = (overrides: Partial<Attachment>) => embedAttachment({ ...attachment, ...overrides }, post).kind;
+  assert.equal(kindOf({ name: "a.litematic", contentType: "" }), "litematic");
+  assert.equal(kindOf({ name: "a.schem", contentType: "" }), "schematic");
+  assert.equal(kindOf({ name: "a.nbt", contentType: "" }), "schematic");
+  assert.equal(kindOf({ name: "a.mp4", contentType: "" }), "video");
+  assert.equal(kindOf({ name: "a.png", contentType: "" }), "image");
+  assert.equal(kindOf({ name: "a", contentType: "application/pdf" }), "pdf");
+  assert.equal(kindOf({ name: "a.tsv", contentType: "" }), "csv");
+  assert.equal(kindOf({ name: "watch", contentType: "", youtube: { title: "t", author_name: "a", author_url: "", thumbnail_url: "", thumbnail_width: 1, thumbnail_height: 1, width: 1, height: 1 } }), "youtube");
+  const schematic = embedAttachment({ ...attachment, name: "a.schem", schematic: { version: "1.21" } }, post);
+  assert.equal(schematic.schematic?.version, "1.21");
 });

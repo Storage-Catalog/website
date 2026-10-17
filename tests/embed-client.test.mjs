@@ -14,7 +14,7 @@ function target() {
     emit(type, data) { for (const handler of events.get(type) ?? []) handler(data); },
   };
 }
-function harness(t, config = {}) {
+function harness(t, config = {}, options = {}) {
   const originalWindow = globalThis.window;
   const host = target();
   host.location = { href: "https://simulator.example/" };
@@ -23,7 +23,7 @@ function harness(t, config = {}) {
   const messages = [];
   let session = "first-session";
   let answer = true;
-  const receive = (data, overrides = {}) => host.emit("message", { origin: "https://catalog.example", source: iframe.contentWindow, data: { namespace: "storage-catalog", version: 1, sessionId: session, ...data }, ...overrides });
+  const receive = (data, overrides = {}) => host.emit("message", { origin: "https://catalog.example", source: iframe.contentWindow, data: { namespace: messages[0]?.namespace, version: 1, sessionId: session, ...data }, ...overrides });
   iframe.contentWindow = { postMessage(message, origin) {
     messages.push({ ...message, targetOrigin: origin });
     queueMicrotask(() => {
@@ -31,7 +31,7 @@ function harness(t, config = {}) {
       else if (answer) receive({ type: "response", requestId: message.requestId, result: message.type === "getState" ? { post: null, attachments: [] } : message.payload });
     });
   } };
-  const client = createCatalogEmbed(iframe, { config, timeoutMs: 50, connectTimeoutMs: 1000 });
+  const client = createCatalogEmbed(iframe, { config, timeoutMs: 50, connectTimeoutMs: 1000, ...options });
   t.after(() => { client.destroy(); globalThis.window = originalWindow; });
   return { client, iframe, messages, receive, setSession(value) { session = value; }, stopAnswers() { answer = false; } };
 }
@@ -91,4 +91,16 @@ test("commands time out and destroy releases waiting callers", async (t) => {
   h.client.destroy();
   await rejected;
   await assert.rejects(h.client.getState(), (error) => error.code === "DESTROYED");
+});
+
+test("namespace option scopes every message to that site", async (t) => {
+  const h = harness(t, {}, { namespace: "custom-archive" });
+  await h.client.ready;
+  assert.ok(h.messages.every((message) => message.namespace === "custom-archive"));
+  let changed = 0;
+  h.client.on("postChanged", () => { changed += 1; });
+  h.receive({ type: "postChanged", post: null, attachments: [], loading: false, namespace: "other-site" });
+  assert.equal(changed, 0);
+  h.receive({ type: "postChanged", post: null, attachments: [], loading: false });
+  assert.equal(changed, 1);
 });

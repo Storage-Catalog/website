@@ -1,4 +1,4 @@
-export type AttachmentKind = "litematic" | "wdl";
+export type AttachmentKind = "litematic" | "schematic" | "wdl" | "youtube" | "video" | "image" | "pdf" | "csv" | "other";
 export interface CatalogEmbedConfig {
   actions?: Array<{ id: string; label: string; kinds: AttachmentKind[] }>;
   download?: Partial<Record<AttachmentKind, "keep" | "replace" | "hide">>;
@@ -25,7 +25,7 @@ export interface CatalogFilters {
 export interface CatalogPost { id: string; code: string; title: string; url: string }
 export interface CatalogAttachment {
   id: string;
-  kind: AttachmentKind | "other";
+  kind: AttachmentKind;
   name: string;
   downloadUrl: string | null;
   sourceUrl: string;
@@ -33,9 +33,10 @@ export interface CatalogAttachment {
   contentType: string;
   sizeBytes?: number;
   litematic?: { version?: string; size?: string; error?: string };
+  schematic?: { version?: string; size?: string; error?: string };
   wdl?: { version?: string; error?: string };
 }
-interface Envelope { namespace: "storage-catalog"; version: 1; sessionId: string }
+interface Envelope { namespace: string; version: 1; sessionId: string }
 export interface CatalogReady extends Envelope { type: "ready"; capabilities: string[] }
 export interface CatalogConnected extends Envelope { type: "connected"; capabilities: string[] }
 export interface CatalogPostChanged extends Envelope {
@@ -77,6 +78,8 @@ export interface CatalogEmbedClient {
 }
 export function createCatalogEmbed(iframe: HTMLIFrameElement, options?: {
   origin?: string;
+  /** Must match the site's embed namespace (siteConfig.embedNamespace). */
+  namespace?: string;
   config?: CatalogEmbedConfig;
   timeoutMs?: number;
   connectTimeoutMs?: number;

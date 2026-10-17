@@ -4,6 +4,11 @@ Protocol version: **1**. The API runs entirely in the browser and works with the
 site's static export. There is no API server, API key, or build-time list of parent
 origins. Ordinary standalone browsing keeps its existing behavior.
 
+Every message carries a namespace, set by `embedNamespace` in `lib/siteConfig.ts`
+(`"storage-catalog"` by default). The parent must use the same value: pass it as
+the helper's `namespace` option, or change the default at the top of
+`public/embed-api.js` when you copy it. The examples below use the default.
+
 ## Quick start
 
 Copy `public/embed-api.js` into your simulator's frontend. TypeScript projects
@@ -114,9 +119,8 @@ The SDK retains successful configurations and reapplies them after document load
 | Field | Default | Meaning |
 | --- | --- | --- |
 | `actions` | `[]` | Custom buttons for matching attachment kinds. |
-| `download.litematic` | `"keep"` | `"keep"`, `"replace"`, or `"hide"`. |
-| `download.wdl` | `"keep"` | Same policy for WDL attachments. |
-| `viewSchematic.mode` | `"builtin"` | `"builtin"`, `"parent"`, or `"hidden"`. |
+| `download.<kind>` | `"keep"` | Per attachment kind: `"keep"`, `"replace"`, or `"hide"`. |
+| `viewSchematic.mode` | `"builtin"` | `"builtin"`, `"parent"`, or `"hidden"`; applies to `litematic` and `schematic` attachments. |
 | `viewSchematic.label` | `"View Schematic"` | Plain-text button label. |
 | `appearance.compact` | `false` | Reduce post spacing and main content padding. |
 | `appearance.hideNavigation` | `false` | Hide branding/site links and post navigation; retain archive search/filter controls. |
@@ -129,26 +133,45 @@ An action is `{ id, label, kinds }`:
 - At most 12 actions; IDs must be unique, 1–64 characters, and contain only
   letters, digits, `_`, or `-`. `view-schematic` is reserved.
 - Labels are plain text, 1–80 characters. No HTML, callbacks, or CSS are accepted.
-- `kinds` is a nonempty list containing `"litematic"`, `"wdl"`, or both.
-  Matching uses existing attachment metadata, not ZIP filename guesses.
+- `kinds` is a nonempty list of attachment kinds (see below). List every kind
+  the action should appear on.
 - Actions appear in registration order on main post and comment attachment cards.
   The built-in/viewer button remains before the custom actions.
 - Custom actions emit events and never navigate to a file or initiate a download.
-  They are disabled if a directly downloadable HTTP(S) URL is unavailable.
+  They are disabled if a directly downloadable HTTP(S) URL is unavailable, except
+  on `youtube` attachments, which have no file; use `sourceUrl` for those.
+
+Every attachment has exactly one kind, checked in this order:
+
+| Kind | Matches |
+| --- | --- |
+| `youtube` | YouTube links. |
+| `litematic` | Litematica metadata or a `.litematic` file. |
+| `schematic` | Schematic metadata or a `.schem`, `.schematic`, or `.nbt` file. |
+| `wdl` | World downloads with parsed WDL metadata. A ZIP filename alone is not enough. |
+| `video` | `video/*` content or `.mp4`, `.webm`, `.m3u8`, `.mpd` files. |
+| `image` | `image/*` content or common image extensions. |
+| `pdf` | PDF content or `.pdf` files. |
+| `csv` | CSV content or `.csv`, `.tsv` files. |
+| `other` | Everything else. |
+
+Download policies (`download.<kind>`) work the same way for every kind:
+
 - `"keep"` leaves the ordinary Download/Open link alongside custom actions.
   `"replace"` removes it and requires at least one matching action.
   `"hide"` removes it without requiring a replacement.
 - Download policies affect matching attachment cards, including their Open link
   when a direct download is unavailable. They do not intercept inline Markdown
   links or change image, PDF, spreadsheet, or video behavior.
-- A parsing error in Litematic/WDL metadata is passed through. It does not by
+- A parsing error in Litematic/schematic/WDL metadata is passed through. It does not by
   itself disable an action; your simulator decides which formats it supports.
 - `actionTimeoutMs` must be an integer from 1000 through 300000.
 
 With `viewSchematic.mode: "parent"`, clicking the viewer button emits action
 `view-schematic` and does not open the catalog's renderer iframe. With `"builtin"`,
 the existing renderer opens. With `"hidden"`, the viewer button is absent.
-This setting applies to Litematics; WDL files have no built-in schematic viewer.
+This setting applies to `litematic` and `schematic` attachments; other kinds have
+no built-in schematic viewer.
 Changing configuration closes any existing built-in schematic overlay and cancels
 pending parent actions in the catalog UI.
 
@@ -159,6 +182,7 @@ pending parent actions in the catalog UI.
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `origin` | Origin of `iframe.src` | Exact catalog origin, including scheme and port. |
+| `namespace` | `"storage-catalog"` | Message namespace; must match the site's `embedNamespace`. |
 | `config` | `{}` | Initial configuration and configuration to reapply after reloads. |
 | `timeoutMs` | `15000` | Timeout for each parent command. |
 | `connectTimeoutMs` | `15000` | Timeout for connecting to each document. |
@@ -256,7 +280,7 @@ actual iframe URL, including development hosts and query parameters.
   post: { id: "...", code: "US001", title: "...", url: "https://..." },
   attachment: {
     id: "...",
-    kind: "litematic", // "wdl" or "other" in state snapshots
+    kind: "litematic", // any attachment kind; see the table above
     name: "example.litematic",
     downloadUrl: "https://raw.githubusercontent.com/...",
     sourceUrl: "https://cdn.discordapp.com/...",
@@ -264,6 +288,7 @@ actual iframe URL, including development hosts and query parameters.
     contentType: "application/octet-stream",
     sizeBytes: 12345, // optional
     litematic: { version: "...", size: "...", error: "..." }, // optional
+    schematic: { version: "...", size: "...", error: "..." }, // optional
     wdl: { version: "...", error: "..." } // optional
   },
   context: { location: "post" } // or { location: "comment", commentId: "..." }
